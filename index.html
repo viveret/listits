@@ -76,7 +76,7 @@
             background-color: #c82333;
         }
 
-        .filter-buttons {
+        .filter-buttons, .import-export-buttons {
             display: flex;
             justify-content: flex-end;
             margin-bottom: 10px;
@@ -87,6 +87,10 @@
     <div id="app">
         <h1>Listits v1</h1>
         <a href="https://github.com/viveret/listits" target="_blank">View Source</a>
+        <div class="import-export-buttons">
+            <button onclick="importData()">Import Data</button>
+            <button onclick="exportData()">Export Data</button>
+        </div>
         <div class="filter-buttons">
             <button onclick="setFilter('all')">Show All</button>
             <button onclick="setFilter('done')">Show Only Done</button>
@@ -98,7 +102,17 @@
     <script>
         const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
 
-        const loadGroups = () => JSON.parse(localStorage.getItem('listitsGroups')) || initializeDefaultGroups();
+        const loadGroups = () => {
+            const json = localStorage.getItem('listitsGroups');
+            if (json && json !== 'undefined') {
+                const data = JSON.parse(json);
+                if (data && data.length !== 0) {
+                    return data;
+                }
+            }
+            
+            return initializeDefaultGroups();
+        };
 
         const initializeDefaultGroups = () => {
             const defaultGroups = [
@@ -241,6 +255,26 @@
         const deleteItemInList = (groupId, listId, itemId) => deleteItem(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items, itemId);
         const toggleDoneStatusInList = (groupId, listId, itemId) => toggleDoneStatus(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items.find(i => i.id === itemId));
         const editNotesInList = (groupId, listId, itemId) => editNotes(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items.find(i => i.id === itemId));
+
+        // Function to export data from localStorage
+        const exportData = () => {
+            const groupsData = localStorage.getItem('listitsGroups');
+            if (groupsData) {
+                prompt('Copy this data:', groupsData);
+            }
+        };
+
+        // Function to import data into localStorage
+        const importData = () => {
+            try {
+                const jsonData = prompt('Paste your data:');
+                localStorage.setItem('listitsGroups', jsonData);
+                groups = loadGroups();
+                render();
+            } catch (error) {
+                console.error('Error importing data:', error);
+            }
+        };
 
         document.addEventListener('DOMContentLoaded', render);
     </script>
