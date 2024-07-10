@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zine Reader v1</title>
+    <title>Listits v1</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -50,7 +50,7 @@
             border-radius: 4px;
         }
 
-        .item.read {
+        .item.done {
             background-color: #e0ffe0;
         }
 
@@ -85,11 +85,11 @@
 </head>
 <body>
     <div id="app">
-        <h1>Zine Reader v1</h1>
+        <h1>Listits v1</h1>
         <div class="filter-buttons">
             <button onclick="setFilter('all')">Show All</button>
-            <button onclick="setFilter('read')">Show Only Read</button>
-            <button onclick="setFilter('unread')">Show Only Unread</button>
+            <button onclick="setFilter('done')">Show Only Done</button>
+            <button onclick="setFilter('not-done')">Show Only Not Done</button>
         </div>
         <button onclick="createNewGroup()">Add New Group</button>
         <div id="groups-container"></div>
@@ -97,20 +97,28 @@
     <script>
         const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
 
-        const loadGroups = () => JSON.parse(localStorage.getItem('zineReaderGroups')) || initializeDefaultGroups();
+        const loadGroups = () => JSON.parse(localStorage.getItem('listitsGroups')) || initializeDefaultGroups();
 
         const initializeDefaultGroups = () => {
             const defaultGroups = [
                 {
                     id: generateId(),
-                    name: 'Favorites',
+                    name: 'Favorite Reads',
                     lists: [
-                        { id: generateId(), name: 'Zines', items: [] },
-                        { id: generateId(), name: 'Books', items: [] }
+                        { id: generateId(), name: 'Books', items: [] },
+                        { id: generateId(), name: 'Zines', items: [] }
+                    ]
+                },
+                {
+                    id: generateId(),
+                    name: 'To Do',
+                    lists: [
+                        { id: generateId(), name: 'At Home', items: [] },
+                        { id: generateId(), name: 'Outside', items: [] }
                     ]
                 }
             ];
-            localStorage.setItem('zineReaderGroups', JSON.stringify(defaultGroups));
+            localStorage.setItem('listitsGroups', JSON.stringify(defaultGroups));
             return defaultGroups;
         };
 
@@ -125,7 +133,7 @@
         };
 
         const saveAndRender = () => {
-            localStorage.setItem('zineReaderGroups', JSON.stringify(groups));
+            localStorage.setItem('listitsGroups', JSON.stringify(groups));
             render();
         };
 
@@ -135,7 +143,7 @@
                 switch (itemType) {
                     case 'item': {
                         const description = promptInput(`Enter ${itemName} description:`)
-                        parent.push({ id: generateId(), name, description, read: false, notes: '' });
+                        parent.push({ id: generateId(), name, description, done: false, notes: '' });
                     } break;
                     case 'group':{
                         parent.push({ id: generateId(), name, lists: [] });
@@ -159,8 +167,8 @@
             }
         };
 
-        const toggleReadStatus = (item) => {
-            item.read = !item.read;
+        const toggleDoneStatus = (item) => {
+            item.done = !item.done;
             saveAndRender();
         };
 
@@ -196,10 +204,10 @@
                         <button onclick="createItemInList('${group.id}', '${list.id}')">Add New Item</button>
                     `;
                     list.items.forEach(item => {
-                        if (filter === 'all' || (filter === 'read' && item.read) || (filter === 'unread' && !item.read)) {
+                        if (filter === 'all' || (filter === 'done' && item.done) || (filter === 'not-done' && !item.done)) {
                             const itemDiv = document.createElement('div');
                             const notes = item.notes ? `<div>Your notes: <i>"${item.notes}"</i></div>` : '';
-                            itemDiv.className = `item ${item.read ? 'read' : ''}`;
+                            itemDiv.className = `item ${item.done ? 'done' : ''}`;
                             itemDiv.innerHTML = `
                                 <div>
                                     <div>
@@ -208,8 +216,8 @@
                                     ${notes}
                                 </div>
                                 <div>
-                                    <button onclick="toggleReadStatusInList('${group.id}', '${list.id}', '${item.id}')">
-                                        ${item.read ? 'Unread' : 'Read'}
+                                    <button onclick="toggleDoneStatusInList('${group.id}', '${list.id}', '${item.id}')">
+                                        ${item.done ? 'Not Done' : 'Done'}
                                     </button>
                                     <button onclick="editNotesInList('${group.id}', '${list.id}', '${item.id}')">Edit Notes</button>
                                     <button class="btn-danger" onclick="deleteItemInList('${group.id}', '${list.id}', '${item.id}')">Delete</button>
@@ -230,7 +238,7 @@
         const deleteList = (groupId, listId) => deleteItem(groups.find(g => g.id === groupId).lists, listId);
         const createItemInList = (groupId, listId) => createItem(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items, 'item', 'item');
         const deleteItemInList = (groupId, listId, itemId) => deleteItem(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items, itemId);
-        const toggleReadStatusInList = (groupId, listId, itemId) => toggleReadStatus(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items.find(i => i.id === itemId));
+        const toggleDoneStatusInList = (groupId, listId, itemId) => toggleDoneStatus(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items.find(i => i.id === itemId));
         const editNotesInList = (groupId, listId, itemId) => editNotes(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items.find(i => i.id === itemId));
 
         document.addEventListener('DOMContentLoaded', render);
