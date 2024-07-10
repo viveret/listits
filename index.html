@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zine Reader v1</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+
+        #app {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .group {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+
+        .group-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-title {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .item {
+            padding: 5px;
+            margin: 5px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+
+        .item.read {
+            background-color: #e0ffe0;
+        }
+
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        .filter-buttons {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>Zine Reader v1</h1>
+        <div class="filter-buttons">
+            <button onclick="setFilter('all')">Show All</button>
+            <button onclick="setFilter('read')">Show Only Read</button>
+            <button onclick="setFilter('unread')">Show Only Unread</button>
+        </div>
+        <button onclick="createNewGroup()">Add New Group</button>
+        <div id="groups-container"></div>
+    </div>
+    <script>
+        const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
+
+        const loadGroups = () => JSON.parse(localStorage.getItem('zineReaderGroups')) || initializeDefaultGroups();
+
+        const initializeDefaultGroups = () => {
+            const defaultGroups = [
+                {
+                    id: generateId(),
+                    name: 'Favorites',
+                    lists: [
+                        { id: generateId(), name: 'Zines', items: [] },
+                        { id: generateId(), name: 'Books', items: [] }
+                    ]
+                }
+            ];
+            localStorage.setItem('zineReaderGroups', JSON.stringify(defaultGroups));
+            return defaultGroups;
+        };
+
+        let groups = loadGroups();
+        let filter = 'all';
+
+        const promptInput = (message, defaultValue = '') => prompt(message, defaultValue) || '';
+
+        const setFilter = (newFilter) => {
+            filter = newFilter;
+            render();
+        };
+
+        const saveAndRender = () => {
+            localStorage.setItem('zineReaderGroups', JSON.stringify(groups));
+            render();
+        };
+
+        const createItem = (parent, itemName, itemType) => {
+            const name = promptInput(`Enter ${itemName} name:`);
+            if (name) {
+                switch (itemType) {
+                    case 'item': {
+                        const description = promptInput(`Enter ${itemName} description:`)
+                        parent.push({ id: generateId(), name, description, read: false, notes: '' });
+                    } break;
+                    case 'group':{
+                        parent.push({ id: generateId(), name, lists: [] });
+                    } break;
+                    case 'list': {
+                        parent.push({ id: generateId(), name, items: [] });
+                    } break;
+                    default: {
+                        throw new Error(`unknown type ${itemType}`);
+                    }
+                }
+                saveAndRender();
+            }
+        };
+
+        const deleteItem = (parent, itemId) => {
+            const index = parent.findIndex(item => item.id === itemId);
+            if (index !== -1) {
+                parent.splice(index, 1);
+                saveAndRender();
+            }
+        };
+
+        const toggleReadStatus = (item) => {
+            item.read = !item.read;
+            saveAndRender();
+        };
+
+        const editNotes = (item) => {
+            const notes = promptInput('Edit notes:', item.notes);
+            if (notes !== null) {
+                item.notes = notes;
+                saveAndRender();
+            }
+        };
+
+        const render = () => {
+            const container = document.getElementById('groups-container');
+            container.innerHTML = '';
+            groups.forEach(group => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'group';
+                groupDiv.innerHTML = `
+                    <div class="group-title">
+                        ${group.name}
+                        <button class="btn-danger" onclick="deleteGroup('${group.id}')">Delete Group</button>
+                    </div>
+                    <button onclick="createList('${group.id}')">Add New List</button>
+                `;
+                group.lists.forEach(list => {
+                    const listDiv = document.createElement('div');
+                    listDiv.className = 'list';
+                    listDiv.innerHTML = `
+                        <div class="list-title">
+                            ${list.name}
+                            <button class="btn-danger" onclick="deleteList('${group.id}', '${list.id}')">Delete List</button>
+                        </div>
+                        <button onclick="createItemInList('${group.id}', '${list.id}')">Add New Item</button>
+                    `;
+                    list.items.forEach(item => {
+                        if (filter === 'all' || (filter === 'read' && item.read) || (filter === 'unread' && !item.read)) {
+                            const itemDiv = document.createElement('div');
+                            const notes = item.notes ? `<div>Your notes: <i>"${item.notes}"</i></div>` : '';
+                            itemDiv.className = `item ${item.read ? 'read' : ''}`;
+                            itemDiv.innerHTML = `
+                                <div>
+                                    <div>
+                                        <strong>${item.name}</strong> - ${item.description}
+                                    </div>
+                                    ${notes}
+                                </div>
+                                <div>
+                                    <button onclick="toggleReadStatusInList('${group.id}', '${list.id}', '${item.id}')">
+                                        ${item.read ? 'Unread' : 'Read'}
+                                    </button>
+                                    <button onclick="editNotesInList('${group.id}', '${list.id}', '${item.id}')">Edit Notes</button>
+                                    <button class="btn-danger" onclick="deleteItemInList('${group.id}', '${list.id}', '${item.id}')">Delete</button>
+                                </div>
+                            `;
+                            listDiv.appendChild(itemDiv);
+                        }
+                    });
+                    groupDiv.appendChild(listDiv);
+                });
+                container.appendChild(groupDiv);
+            });
+        };
+
+        const createNewGroup = () => createItem(groups, 'group', 'group');
+        const deleteGroup = (groupId) => deleteItem(groups, groupId);
+        const createList = (groupId) => createItem(groups.find(g => g.id === groupId).lists, 'list', 'list');
+        const deleteList = (groupId, listId) => deleteItem(groups.find(g => g.id === groupId).lists, listId);
+        const createItemInList = (groupId, listId) => createItem(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items, 'item', 'item');
+        const deleteItemInList = (groupId, listId, itemId) => deleteItem(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items, itemId);
+        const toggleReadStatusInList = (groupId, listId, itemId) => toggleReadStatus(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items.find(i => i.id === itemId));
+        const editNotesInList = (groupId, listId, itemId) => editNotes(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items.find(i => i.id === itemId));
+
+        document.addEventListener('DOMContentLoaded', render);
+    </script>
+</body>
+</html>
