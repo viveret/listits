@@ -2,6 +2,8 @@
 
 Listits is a simple web application for organizing lists of items. It allows you to create groups, lists within those groups, and items within lists. You can mark items as done, edit item descriptions and notes, and delete items, lists, or entire groups.
 
+https://viveret.github.io/listits/
+
 ## Features
 
 - **Group Management**: Create, rename, and delete groups of lists.
