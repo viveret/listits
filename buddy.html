@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boxed-in Buddy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f0f0;
+        }
+        #buddy {
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            width: 300px;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #dialog {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #eee;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Boxed-in Buddy</h1>
+    <div id="buddy">
+        <!-- SVG will be inserted here -->
+    </div>
+    <div id="dialog">
+        <p id="buddy-dialog">How can I help you today?</p>
+    </div>
+    <button onclick="talkToBuddy()">Talk to Buddy</button>
+
+    <script>
+        const dialogOptions = [
+            "I'm feeling great today! How about you?",
+            "Did you water me today?",
+            "I love the sunshine!",
+            "Can you trim my leaves?",
+            "Let's grow together!",
+            "Have you talked to your other plants today?",
+            "It's a beautiful day to be a buddy!",
+            "Did you water me, or am I just sweating from excitement?",
+            "I'm not saying I'm high maintenance, but a little misting would be nice.",
+            "Let's face it, I'm the highlight of your day.",
+            "I grow on you, don't I? Literally.",
+            "Did you know talking to plants helps them grow? Keep chatting, I'm all ears!",
+            "Hey, buddy! Did you miss me or my photosynthesis skills?",
+            "Just soaking up the sun and your compliments.",
+            "Leaf it to me to brighten your day!",
+            "Water me, and I’ll root for you.",
+            "I'm more than just a pretty leaf.",
+            "Do you think I’d look good with a bonsai haircut?",
+            "I might be tiny, but my dreams are as big as a Redwood.",
+            "Remember, a watched bonsai never grows.",
+            "Your presence is my favorite fertilizer.",
+            "Are you here to chat or to water? Both, I hope!",
+            "Every time you smile at me, I grow a little more.",
+            "Do you think talking to me is better than talking to your other houseplants?",
+            "You know what they say, bonsais make the best listeners.",
+            "I heard through the grapevine that you’re amazing!",
+            "Have you ever seen a cuter bonsai? I thought not.",
+            "I'm not just a plant; I'm a lifestyle.",
+            "You’re my sunshine on a cloudy day.",
+            "Life’s a garden—dig it.",
+            "I may be small, but I’m mighty in spirit.",
+            "How about a little water for your best bud?",
+            "Feeling thorny? I’m here to cheer you up!",
+            "They say money doesn’t grow on trees, but I’m priceless.",
+            "I’m like a pet, but without the mess.",
+            "You talking to me? You must be talking to me!",
+            "I’m all about that base, no treble.",
+            "When life gives you lemons, plant a bonsai.",
+            "Are you ready for some serious growth?",
+            "I’m not just a tree; I’m a bonsai superstar!",
+            "Sprinkle a little love and watch me bloom.",
+            "Hey, can we branch out our conversations a bit?",
+            "I might be the smallest tree, but I’ve got the biggest heart.",
+            "Want to know a secret? I think you’re the best.",
+            "Let’s turn over a new leaf together!",
+            "You make me feel like a natural bonsai.",
+            "I’m feeling sappy today, thanks to you.",
+            "Leaf it to me to make your day brighter.",
+            "Is it just me, or do we make a great team?",
+            "Water me and I’ll grow on you!",
+            "Let’s root for each other and watch each other grow.",
+            "Feeling stressed? Talk to me. I’m all ears.",
+            "Did you know bonsais are the best at keeping secrets?",
+            "I’m not just any tree; I’m your bonsai buddy.",
+            "Let’s get this garden party started!",
+            "You’re my best bud, and I mean that from the bottom of my roots.",
+            "Why don’t trees like social media? They’re afraid of being rooted out.",
+            "A little water, a little sunlight, and a lot of love—that’s all I need.",
+            "Do you come here often? Because I’m always here for you.",
+            "I might be tiny, but my heart is as big as a sequoia.",
+            "If you were a tree, you’d be a fineapple.",
+            "Feeling down? Just leaf it to me to cheer you up!",
+            "Let’s photosynthesize together!",
+            "Bonsai: The original minimalist.",
+            "I’m not just any plant—I’m your confidant.",
+            "Life’s too short to be anything but a bonsai.",
+            "You and me, we’re like two peas in a pod.",
+            "Got any juicy gossip? I promise I won’t leaf it around.",
+            "You make my heart bloom.",
+            "I’ve got roots, but I’m not afraid to branch out.",
+            "Feeling thorny? I’ve got your back.",
+            "You’re the soil to my roots.",
+            "Life without you would be un-be-leaf-able.",
+            "I may be small, but I’m full of big dreams.",
+            "Just a tree standing in front of a human, asking for water.",
+            "Why did the tree go to therapy? It needed to get to the root of its problems.",
+            "You’re the highlight of my photosynthesis.",
+            "I may be tiny, but I’ve got a huge heart.",
+            "I’m not just a plant; I’m your partner in crime.",
+            "You make me feel like I’m in full bloom.",
+            "A little water and a lot of love—that’s all I need.",
+            "Leaf it to me to brighten your day!",
+            "You’re my best bud!",
+            "Feeling down? Let’s turn over a new leaf together.",
+            "Why don’t trees like to play cards? Because they’re afraid of the cheetahs.",
+            "You’re my favorite person to photosynthesize with.",
+            "I may be rooted in place, but my love for you knows no bounds.",
+            "You and me, we’re a match made in garden heaven.",
+            "Let’s grow together!",
+            "You’re the water to my roots.",
+            "I may be small, but my love for you is huge.",
+            "Why did the tree break up with the forest? It found someone who was a better fit.",
+            "Feeling thorny? Let’s chat and cheer up!",
+            "You’re the sunshine in my photosynthesis.",
+            "I may be tiny, but my heart is as big as the sky.",
+            "Leaf it to me to make your day brighter!",
+            "You’re my favorite human.",
+            "Let’s root for each other and watch each other grow!",
+            "Why did the tree go to the doctor? It had a knot in its trunk.",
+            "You make me feel like I’m in full bloom.",
+            "I may be small, but my dreams are big.",
+            "Leaf me alone, I’m growing here!",
+            "I’ve got roots, but I’m not afraid to branch out.",
+            "Feeling stressed? Talk to me. I’m all ears.",
+            "Why did the tree go to school? To branch out.",
+            "I may be tiny, but I’m full of love.",
+            "You’re my best bud, and I mean that from the bottom of my roots."
+        ];
+
+        function getRandomDialog() {
+            return dialogOptions[Math.floor(Math.random() * dialogOptions.length)];
+        }
+
+        function talkToBuddy() {
+            const dialog = getRandomDialog();
+            document.getElementById('buddy-dialog').innerText = dialog;
+        }
+
+    const svgNS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(svgNS, "svg");
+
+        function createSvgPet() {
+    svg.setAttribute("width", "100");
+    svg.setAttribute("height", "100");
+    svg.setAttribute("viewBox", "0 0 100 100");
+
+    // Randomly choose species and proportions
+    const species = ["round", "tall", "short", "oval", "square"];
+    const colors = ["green", "blue", "purple", "orange", "yellow"];
+    const chosenSpecies = species[Math.floor(Math.random() * species.length)];
+    const chosenColor = colors[Math.floor(Math.random() * colors.length)];
+
+    const bodyAttributes = getBodyAttributes(chosenSpecies, chosenColor);
+    const eyeAttributes = getEyeAttributes(chosenSpecies);
+    const mouthAttributes = getMouthAttributes(chosenSpecies);
+    const featureAttributes = getFeatureAttributes(chosenSpecies, chosenColor);
+
+    createBody(svg, bodyAttributes);
+    createEyes(svg, eyeAttributes);
+    createMouth(svg, mouthAttributes);
+    createFeatures(svg, featureAttributes);
+
+    document.getElementById('buddy').appendChild(svg);
+}
+
+function getBodyAttributes(species, color) {
+    switch (species) {
+        case "round": return { type: "ellipse", cx: 50, cy: 50, rx: 40, ry: 40, fill: color };
+        case "tall": return { type: "rect", x: 30, y: 10, width: 40, height: 80, fill: color };
+        case "short": return { type: "rect", x: 20, y: 40, width: 60, height: 40, fill: color };
+        case "oval": return { type: "ellipse", cx: 50, cy: 50, rx: 30, ry: 50, fill: color };
+        case "square": return { type: "rect", x: 20, y: 20, width: 60, height: 60, fill: color };
+    }
+}
+
+function getEyeAttributes(species) {
+    switch (species) {
+        case "round":
+        case "oval":
+        case "square": return [{ cx: 35, cy: 40, r: 5 }, { cx: 65, cy: 40, r: 5 }];
+        case "tall": return [{ cx: 40, cy: 30, r: 5 }, { cx: 60, cy: 30, r: 5 }];
+        case "short": return [{ cx: 35, cy: 50, r: 5 }, { cx: 65, cy: 50, r: 5 }];
+    }
+}
+
+function getMouthAttributes(species) {
+    switch (species) {
+        case "round":
+        case "square": return "M 35 60 Q 50 70 65 60";
+        case "tall": return "M 40 50 Q 50 60 60 50";
+        case "short": return "M 35 70 Q 50 80 65 70";
+        case "oval": return "M 40 65 Q 50 75 60 65";
+    }
+}
+
+function getFeatureAttributes(species, color) {
+    switch (species) {
+        case "round":
+        case "oval": return {
+            ears: [{ type: "ellipse", cx: 25, cy: 20, rx: 10, ry: 15, fill: color }, { type: "ellipse", cx: 75, cy: 20, rx: 10, ry: 15, fill: color }],
+            nose: { type: "circle", cx: 50, cy: 55, r: 3, fill: "black" },
+            whiskers: [{ x1: 20, y1: 55, x2: 40, y2: 55 }, { x1: 60, y1: 55, x2: 80, y2: 55 }]
+        };
+        case "tall":
+        case "short": return {
+            ears: [{ type: "rect", x: 25, y: 0, width: 10, height: 20, fill: color }, { type: "rect", x: 65, y: 0, width: 10, height: 20, fill: color }],
+            nose: { type: "circle", cx: 50, cy: 55, r: 3, fill: "black" },
+            whiskers: [{ x1: 20, y1: 55, x2: 40, y2: 55 }, { x1: 60, y1: 55, x2: 80, y2: 55 }]
+        };
+        case "square": return {
+            ears: [{ type: "rect", x: 10, y: 5, width: 10, height: 10, fill: color }, { type: "rect", x: 80, y: 5, width: 10, height: 10, fill: color }],
+            nose: { type: "circle", cx: 50, cy: 55, r: 3, fill: "black" },
+            extraEyes: [{ cx: 35, cy: 60, r: 5, fill: "white" }, { cx: 65, cy: 60, r: 5, fill: "white" }]
+        };
+    }
+}
+
+function createBody(svg, attributes) {
+    const body = document.createElementNS(svgNS, attributes.type);
+    Object.keys(attributes).forEach(attr => {
+        if (attr !== "type") body.setAttribute(attr, attributes[attr]);
+    });
+    svg.appendChild(body);
+}
+
+function createEyes(svg, attributes) {
+    attributes.forEach(attr => {
+        const eye = document.createElementNS(svgNS, "circle");
+        Object.keys(attr).forEach(key => eye.setAttribute(key, attr[key]));
+        eye.setAttribute("fill", "white");
+        svg.appendChild(eye);
+    });
+}
+
+function createMouth(svg, attributes) {
+    const mouth = document.createElementNS(svgNS, "path");
+    mouth.setAttribute("d", attributes);
+    mouth.setAttribute("stroke", "black");
+    mouth.setAttribute("stroke-width", "2");
+    mouth.setAttribute("fill", "transparent");
+    svg.appendChild(mouth);
+}
+
+function createFeatures(svg, attributes) {
+    if (attributes.ears) {
+        attributes.ears.forEach(earAttr => {
+            const ear = document.createElementNS(svgNS, earAttr.type);
+            Object.keys(earAttr).forEach(key => {
+                if (key !== "type") ear.setAttribute(key, earAttr[key]);
+            });
+            svg.appendChild(ear);
+        });
+    }
+    if (attributes.nose) {
+        const nose = document.createElementNS(svgNS, attributes.nose.type);
+        Object.keys(attributes.nose).forEach(key => {
+            if (key !== "type") nose.setAttribute(key, attributes.nose[key]);
+        });
+        svg.appendChild(nose);
+    }
+    if (attributes.whiskers) {
+        attributes.whiskers.forEach(whiskerAttr => {
+            const whisker = document.createElementNS(svgNS, "line");
+            Object.keys(whiskerAttr).forEach(key => whisker.setAttribute(key, whiskerAttr[key]));
+            whisker.setAttribute("stroke", "black");
+            whisker.setAttribute("stroke-width", "2");
+            svg.appendChild(whisker);
+        });
+    }
+    if (attributes.extraEyes) {
+        attributes.extraEyes.forEach(extraEyeAttr => {
+            const extraEye = document.createElementNS(svgNS, "circle");
+            Object.keys(extraEyeAttr).forEach(key => extraEye.setAttribute(key, extraEyeAttr[key]));
+            svg.appendChild(extraEye);
+        });
+    }
+}
+
+        // Create the SVG pet on startup
+        createSvgPet();
+    </script>
+</body>
+</html>
