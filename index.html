@@ -195,19 +195,77 @@
             }
         };
 
+        // Function to save a new checklist template
+        const saveTemplate = (templateName, lists) => {
+            const templates = JSON.parse(localStorage.getItem('listitsTemplates')) || [];
+            const newTemplate = { id: generateId(), name: templateName, lists };
+            templates.push(newTemplate);
+            localStorage.setItem('listitsTemplates', JSON.stringify(templates));
+        };
+
+        // Function to apply a template to a group
+        const applyTemplateToGroup = (groupId, templateId) => {
+            const templates = JSON.parse(localStorage.getItem('listitsTemplates')) || [];
+            const template = templates.find(t => t.id === templateId);
+            if (template) {
+                const group = groups.find(g => g.id === groupId);
+                if (group) {
+                    group.lists = template.lists.map(list => ({
+                        ...list,
+                        id: generateId(),
+                        items: list.items.map(item => ({ ...item, id: generateId() }))
+                    }));
+                    saveAndRender();
+                }
+            }
+        };
+
+        // Function to list all templates (for the UI)
+        const getTemplates = () => JSON.parse(localStorage.getItem('listitsTemplates')) || [];
+
+        // Function to create a new template from a group
+        const createTemplateFromGroup = (groupId) => {
+            const group = groups.find(g => g.id === groupId);
+            if (group) {
+                const templateName = promptInput('Enter template name:');
+                if (templateName) {
+                    saveTemplate(templateName, group.lists);
+                }
+            }
+        };
+
+        // Add the ability to apply a template to the UI
+        const renderTemplateOptions = (groupId) => {
+            const templates = getTemplates();
+            if (templates.length) {
+                const container = document.createElement('div');
+                templates.forEach(template => {
+                    const button = document.createElement('button');
+                    button.textContent = `Apply ${template.name}`;
+                    button.onclick = () => applyTemplateToGroup(groupId, template.id);
+                    container.appendChild(button);
+                });
+                document.getElementById(`group-${groupId}`).appendChild(container);
+            }
+        };
+
         const render = () => {
             const container = document.getElementById('groups-container');
             container.innerHTML = '';
             groups.forEach(group => {
                 const groupDiv = document.createElement('div');
+                groupDiv.id = `group-${group.id}`;
                 groupDiv.className = 'group';
                 groupDiv.innerHTML = `
                     <div class="group-title">
                         ${group.name}
                         <button class="btn-danger" onclick="deleteGroup('${group.id}')">Delete Group</button>
+                        <button onclick="createTemplateFromGroup('${group.id}')">Save as Template</button>
+                        <button onclick="renderTemplateOptions('${group.id}')">Apply Template</button>
                     </div>
                     <button onclick="createList('${group.id}')">Add New List</button>
                 `;
+                // renderTemplateOptions(group.id);
                 group.lists.forEach(list => {
                     const listDiv = document.createElement('div');
                     listDiv.className = 'list';
