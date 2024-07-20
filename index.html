@@ -64,19 +64,24 @@
             cursor: pointer;
         }
 
-        button:hover {
+        button:not([disabled]):hover {
             background-color: #0056b3;
+        }
+
+        button[disabled] {
+            background-color: #ccc;
+            cursor: not-allowed;
         }
 
         .btn-danger {
             background-color: #dc3545;
         }
 
-        .btn-danger:hover {
+        .btn-danger:not([disabled]):hover {
             background-color: #c82333;
         }
 
-        .filter-buttons, .import-export-buttons {
+        .filter-buttons, .import-export-buttons, .undo-redo-buttons {
             display: flex;
             justify-content: flex-end;
             margin-bottom: 10px;
@@ -87,9 +92,15 @@
     <div id="app">
         <h1>Listits v1</h1>
         <a href="https://github.com/viveret/listits" target="_blank">View Source</a>
-        <div class="import-export-buttons">
-            <button onclick="importData()">Import Data</button>
-            <button onclick="exportData()">Export Data</button>
+        <div>
+            <div class="import-export-buttons">
+                <button onclick="importData()">Import Data</button>
+                <button onclick="exportData()">Export Data</button>
+            </div>
+            <div class="undo-redo-buttons">
+                <button onclick="undo()">Undo</button>
+                <button onclick="redo()">Redo</button>
+            </div>
         </div>
         <div class="filter-buttons">
             <button onclick="setFilter('all')">Show All</button>
@@ -98,46 +109,51 @@
         </div>
         <button onclick="createNewGroup()">Add New Group</button>
         <div id="groups-container"></div>
+        <div class="other-buttons">
+            <button onclick="clearData()" class="btn-danger">Clear Data</button>
+        </div>
     </div>
     <script>
         const generateId = () => '_' + Math.random().toString(36).substr(2, 9);
 
-        const loadGroups = () => {
+        const loadData = () => {
             const json = localStorage.getItem('listitsGroups');
             if (json && json !== 'undefined') {
                 const data = JSON.parse(json);
-                if (data && data.length !== 0) {
+                if (data && typeof data === "object" && data.groups && data.groups.length !== 0) {
                     return data;
                 }
             }
             
-            return initializeDefaultGroups();
+            return initializeDefaultData();
         };
 
-        const initializeDefaultGroups = () => {
-            const defaultGroups = [
-                {
-                    id: generateId(),
-                    name: 'Favorite Reads',
-                    lists: [
-                        { id: generateId(), name: 'Books', items: [] },
-                        { id: generateId(), name: 'Zines', items: [] }
-                    ]
-                },
-                {
-                    id: generateId(),
-                    name: 'To Do',
-                    lists: [
-                        { id: generateId(), name: 'At Home', items: [] },
-                        { id: generateId(), name: 'Outside', items: [] }
-                    ]
-                }
-            ];
-            localStorage.setItem('listitsGroups', JSON.stringify(defaultGroups));
+        const initializeDefaultData = () => {
+            const defaultGroups = {
+                historyMessage: 'Initial state (default)',
+                groups: [
+                    {
+                        id: generateId(),
+                        name: 'Favorite Reads',
+                        lists: [
+                            { id: generateId(), name: 'Books', items: [] },
+                            { id: generateId(), name: 'Zines', items: [] }
+                        ]
+                    },
+                    {
+                        id: generateId(),
+                        name: 'To Do',
+                        lists: [
+                            { id: generateId(), name: 'At Home', items: [] },
+                            { id: generateId(), name: 'Outside', items: [] }
+                        ]
+                    }
+                ]
+            };
             return defaultGroups;
         };
 
-        let groups = loadGroups();
+        let data = loadData();
         let filter = 'all';
 
         const promptInput = (message, defaultValue = '') => prompt(message, defaultValue) || '';
@@ -147,8 +163,96 @@
             render();
         };
 
+        const addToHistory = (historyMessage) => {
+            console.log('Adding to history:', historyMessage);
+            data.historyMessage = historyMessage;
+            addToUndoHistory(data, true);
+
+            // clear redo history
+            localStorage.setItem('listitsRedoHistory', JSON.stringify([]));
+        };
+
+        const addToUndoHistory = (state, clipHistory) => {
+            const history = JSON.parse(localStorage.getItem('listitsHistory')) || [];
+            history.push(state);
+            if (clipHistory && history.length > 100) {
+                history.shift();
+            }
+            localStorage.setItem('listitsHistory', JSON.stringify(history));
+        };
+
+        const addToRedoHistory = (state) => {
+            const redoHistory = JSON.parse(localStorage.getItem('listitsRedoHistory')) || [];
+            redoHistory.push(state);
+            localStorage.setItem('listitsRedoHistory', JSON.stringify(redoHistory));
+        };
+
+        const undo = () => {
+            const history = JSON.parse(localStorage.getItem('listitsHistory')) || [];
+            if (history.length) {
+                let historyItem = history.pop();
+
+                // check if this is the same as the current state
+                if (JSON.stringify(historyItem) === JSON.stringify(data)) {
+                    // add current state to redo history
+                    addToRedoHistory(historyItem);
+                    historyItem = history.pop();
+                } else {
+                    addToRedoHistory(data);
+                }
+
+                console.log('Undoing:', data.historyMessage);
+                if (!historyItem) {
+                    historyItem = initializeDefaultData();
+                }
+                console.log('New state:', historyItem.historyMessage);
+                data = historyItem;
+
+                localStorage.setItem('listitsHistory', JSON.stringify(history));
+                saveAndRender();
+            }
+        };
+
+        const redo = () => {
+            const history = JSON.parse(localStorage.getItem('listitsRedoHistory')) || [];
+            if (history.length) {
+                const redoItem = history.pop();
+                data = redoItem;
+                console.log('Redoing:', redoItem.historyMessage);
+
+                // add current state to history
+                addToUndoHistory(redoItem, false);
+                localStorage.setItem('listitsRedoHistory', JSON.stringify(history));
+                saveAndRender();
+            }
+        };
+
+        const setCanUndo = () => {
+            const history = JSON.parse(localStorage.getItem('listitsHistory')) || [];
+            if (history.length === 0) {
+                document.querySelector('button[onclick="undo()"]').disabled = true;
+            } else {
+                document.querySelector('button[onclick="undo()"]').removeAttribute('disabled');
+            }
+        };
+
+        const setCanRedo = () => {
+            const history = JSON.parse(localStorage.getItem('listitsRedoHistory')) || [];
+            if (history.length === 0) {
+                document.querySelector('button[onclick="redo()"]').disabled = true;
+            } else {
+                document.querySelector('button[onclick="redo()"]').removeAttribute('disabled');
+            }
+        };
+
+        const saveChangesToHistoryAndRender = (historyMessage) => {
+            addToHistory(historyMessage);
+            saveAndRender();
+        };
+
         const saveAndRender = () => {
-            localStorage.setItem('listitsGroups', JSON.stringify(groups));
+            // add to history
+            localStorage.setItem('listitsGroups', JSON.stringify(data));
             render();
         };
 
@@ -170,7 +274,7 @@
                         throw new Error(`unknown type ${itemType}`);
                     }
                 }
-                saveAndRender();
+                saveChangesToHistoryAndRender(`Created new ${itemName}: ${name}`);
             }
         };
 
@@ -178,20 +282,28 @@
             const index = parent.findIndex(item => item.id === itemId);
             if (index !== -1) {
                 parent.splice(index, 1);
-                saveAndRender();
+                saveChangesToHistoryAndRender(`Deleted ${parent[index].name}`);
             }
         };
 
         const toggleDoneStatus = (item) => {
             item.done = !item.done;
-            saveAndRender();
+            saveChangesToHistoryAndRender(`Toggled done status for ${item.name}`);
+        };
+
+        const editDescription = (item) => {
+            const description = promptInput('Edit description:', item.description);
+            if (description) {
+                item.description = description;
+                saveChangesToHistoryAndRender(`Edited description for ${item.name}`);
+            }
         };
 
         const editNotes = (item) => {
             const notes = promptInput('Edit notes:', item.notes);
-            if (notes !== null) {
+            if (notes) {
                 item.notes = notes;
-                saveAndRender();
+                saveChangesToHistoryAndRender(`Edited notes for ${item.name}`);
             }
         };
 
@@ -208,14 +320,14 @@
             const templates = JSON.parse(localStorage.getItem('listitsTemplates')) || [];
             const template = templates.find(t => t.id === templateId);
             if (template) {
-                const group = groups.find(g => g.id === groupId);
+                const group = findGroup(groupId);
                 if (group) {
                     group.lists = template.lists.map(list => ({
                         ...list,
                         id: generateId(),
                         items: list.items.map(item => ({ ...item, id: generateId() }))
                     }));
-                    saveAndRender();
+                    saveChangesToHistoryAndRender(`Applied template ${template.name} to group ${group.name}`);
                 }
             }
         };
@@ -225,12 +337,41 @@
 
         // Function to create a new template from a group
         const createTemplateFromGroup = (groupId) => {
-            const group = groups.find(g => g.id === groupId);
+            const group = findGroup(groupId);
             if (group) {
                 const templateName = promptInput('Enter template name:');
                 if (templateName) {
                     saveTemplate(templateName, group.lists);
                 }
+            }
+        };
+
+        // Function to export data from localStorage
+        const exportData = () => {
+            const groupsData = localStorage.getItem('listitsGroups');
+            if (groupsData) {
+                prompt('Copy this data:', groupsData);
+            }
+        };
+
+        // Function to import data into localStorage
+        const importData = () => {
+            try {
+                const jsonData = prompt('Paste your data:');
+                localStorage.setItem('listitsGroups', jsonData);
+                data = loadData();
+                saveChangesToHistoryAndRender('Imported data');
+            } catch (error) {
+                console.error('Error importing data:', error);
+            }
+        };
+
+        const clearData = () => {
+            if (confirm('Are you sure you want to clear all data?')) {
+                localStorage.removeItem('listitsGroups');
+                localStorage.removeItem('listitsTemplates');
+                data = initializeDefaultData();
+                saveChangesToHistoryAndRender('Cleared all data');
             }
         };
 
@@ -249,10 +390,16 @@
             }
         };
 
+        const updateStaticElements = () => {
+            setCanUndo();
+            setCanRedo();
+        };
+
         const render = () => {
+            updateStaticElements();
             const container = document.getElementById('groups-container');
             container.innerHTML = '';
-            groups.forEach(group => {
+            data.groups.forEach(group => {
                 const groupDiv = document.createElement('div');
                 groupDiv.id = `group-${group.id}`;
                 groupDiv.className = 'group';
@@ -293,6 +440,7 @@
                                         ${item.done ? 'Not Done' : 'Done'}
                                     </button>
                                     <button onclick="editNotesInList('${group.id}', '${list.id}', '${item.id}')">Edit Notes</button>
+                                    <button onclick="editDescriptionInList('${group.id}', '${list.id}', '${item.id}')">Edit Description</button>
                                     <button class="btn-danger" onclick="deleteItemInList('${group.id}', '${list.id}', '${item.id}')">Delete</button>
                                 </div>
                             `;
@@ -305,34 +453,38 @@
             });
         };
 
-        const createNewGroup = () => createItem(groups, 'group', 'group');
-        const deleteGroup = (groupId) => deleteItem(groups, groupId);
-        const createList = (groupId) => createItem(groups.find(g => g.id === groupId).lists, 'list', 'list');
-        const deleteList = (groupId, listId) => deleteItem(groups.find(g => g.id === groupId).lists, listId);
-        const createItemInList = (groupId, listId) => createItem(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items, 'item', 'item');
-        const deleteItemInList = (groupId, listId, itemId) => deleteItem(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items, itemId);
-        const toggleDoneStatusInList = (groupId, listId, itemId) => toggleDoneStatus(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items.find(i => i.id === itemId));
-        const editNotesInList = (groupId, listId, itemId) => editNotes(groups.find(g => g.id === groupId).lists.find(l => l.id === listId).items.find(i => i.id === itemId));
-
-        // Function to export data from localStorage
-        const exportData = () => {
-            const groupsData = localStorage.getItem('listitsGroups');
-            if (groupsData) {
-                prompt('Copy this data:', groupsData);
+        // query data functions
+        const queryData = (query) => {
+            const groups = data.groups;
+            const group = groups.find(query.group);
+            if (!group) {
+                return null;
             }
+            const list = group.lists.find(query.list);
+            if (!list) {
+                return null;
+            }
+            const item = list.items.find(query.item);
+            if (!item) {
+                return null;
+            }
+            return { group, list, item };
         };
 
-        // Function to import data into localStorage
-        const importData = () => {
-            try {
-                const jsonData = prompt('Paste your data:');
-                localStorage.setItem('listitsGroups', jsonData);
-                groups = loadGroups();
-                render();
-            } catch (error) {
-                console.error('Error importing data:', error);
-            }
-        };
+        const findGroup = (groupId) => queryData({ group: g => g.id === groupId })?.group;
+        const findGroupList = (groupId, listId) => queryData({ group: g => g.id === groupId, list: l => l.id === listId })?.list;
+        const findGroupListItem = (groupId, listId, itemId) => queryData({ group: g => g.id === groupId, list: l => l.id === listId, item: i => i.id === itemId })?.item;
+
+        // UI functions
+        const createNewGroup = () => createItem(data.groups, 'group', 'group');
+        const deleteGroup = (groupId) => deleteItem(data.groups, groupId);
+        const createList = (groupId) => createItem(findGroup(groupId).lists, 'list', 'list');
+        const deleteList = (groupId, listId) => deleteItem(findGroup(groupId).lists, listId);
+        const createItemInList = (groupId, listId) => createItem(findGroupList(groupId, listId).items, 'item', 'item');
+        const deleteItemInList = (groupId, listId, itemId) => deleteItem(findGroupList(groupId, listId).items, itemId);
+        const toggleDoneStatusInList = (groupId, listId, itemId) => toggleDoneStatus(findGroupListItem(groupId, listId, itemId));
+        const editDescriptionInList = (groupId, listId, itemId) => editDescription(findGroupListItem(groupId, listId, itemId));
+        const editNotesInList = (groupId, listId, itemId) => editNotes(findGroupListItem(groupId, listId, itemId));
 
         document.addEventListener('DOMContentLoaded', render);
     </script>
